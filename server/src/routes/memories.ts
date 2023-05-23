@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { prisma } from '../lib/prima';
+import { prisma } from '../lib/prisma';
 
 export async function memoriesRoutes(app: FastifyInstance) {
   app.get('/memories', async () => {
