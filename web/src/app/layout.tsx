@@ -7,7 +7,6 @@ import {
 
 const roboto = Roboto({
   subsets: ['latin'],
-  preload: true,
   variable: '--font-roboto',
 });
 
