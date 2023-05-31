@@ -1,11 +1,13 @@
 import { Link } from 'expo-router';
 import { Switch } from 'react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollView, Text, TextInput, View } from 'react-native';
+import { Video, ResizeMode, AVPlaybackStatusSuccess } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import Icon from '@expo/vector-icons/Feather';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import NLWLogo from '../src/assets/nlw-spacetime-logo.svg';
 import { Image } from 'react-native';
@@ -17,14 +19,22 @@ export default function NewMemory() {
   const [content, setContent] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
 
-  async function openImagePicker () {
+  const [isVideo, setIsVideo] = useState(false);
+  const video = useRef(null);
+  const [status, setStatus] = useState({} as AVPlaybackStatusSuccess);
+
+  async function openImagePicker() {
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      quality: 1,
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        quality: 1,
       });
 
       if (result.assets[0]) {
+        result.assets[0].type === 'video'
+          ? setIsVideo(true)
+          : setIsVideo(false);
+
         setPreview(result.assets[0].uri);
       }
     } catch (error) {
@@ -72,23 +82,75 @@ export default function NewMemory() {
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={openImagePicker}
-          className="h-32 items-center justify-center rounded-lg border border-dashed border-gray-700 bg-black/20"
+          className="h-56 items-center justify-center rounded-lg border border-dashed border-gray-700 bg-black/20"
         >
           {preview ? (
-            <Image
-              source={{ uri: preview }}
-              className='h-full w-full rounded-lg object-cover'
-            />
-          ): (
+            isVideo ? (
+              <Video
+                source={{ uri: preview }}
+                useNativeControls={false}
+                resizeMode={ResizeMode.COVER}
+                className="h-full w-full rounded-lg object-cover"
+                ref={video}
+                isLooping
+                shouldPlay={false}
+                onPlaybackStatusUpdate={(status) => {
+                  if (!status.isLoaded) return;
+                  setStatus(() => status as AVPlaybackStatusSuccess);
+                }}
+              />
+            ) : (
+              <Image
+                source={{ uri: preview }}
+                className="h-full w-full rounded-lg object-cover"
+              />
+            )
+          ) : (
             <View className="flex-row items-center gap-2">
-            <Icon name="image" color={'#fff'} />
+              <Icon name="image" color={'#fff'} />
 
-            <Text className="font-body text-sm text-gray-200">
-              Adicionar foto ou vídeo de capa
-            </Text>
-          </View>
+              <Text className="font-body text-sm text-gray-200">
+                Adicionar foto ou vídeo de capa
+              </Text>
+            </View>
           )}
         </TouchableOpacity>
+
+        {preview && isVideo && (
+          <View className="flex-row items-center justify-center space-x-8">
+            <TouchableOpacity
+              className="items-center rounded-full bg-green-500 p-3"
+              activeOpacity={0.7}
+              onPress={() =>
+                video.current.setPositionAsync(status.positionMillis - 5000)
+              }
+            >
+              <Ionicons name="play-back" size={24} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="items-center rounded-full bg-green-500 p-3"
+              activeOpacity={0.7}
+              onPress={() =>
+                status.isPlaying
+                  ? video.current.pauseAsync()
+                  : video.current.playAsync()
+              }
+            >
+              <Ionicons name={status.isPlaying ? 'pause' : 'play'} size={24} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="items-center rounded-full bg-green-500 p-3"
+              activeOpacity={0.7}
+              onPress={() =>
+                video.current.setPositionAsync(status.positionMillis + 5000)
+              }
+            >
+              <Ionicons name="play-forward" size={24} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <TextInput
           multiline
