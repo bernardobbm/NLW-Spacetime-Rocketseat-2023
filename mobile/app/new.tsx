@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Switch } from 'react-native';
 import { useRef, useState } from 'react';
 import { TouchableOpacity } from 'react-native';
@@ -8,19 +8,22 @@ import { Video, ResizeMode, AVPlaybackStatusSuccess } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import Icon from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as SecureStore from 'expo-secure-store';
 
 import NLWLogo from '../src/assets/nlw-spacetime-logo.svg';
 import { Image } from 'react-native';
+import { api } from '../src/lib/api';
 
 export default function NewMemory() {
   const { bottom, top } = useSafeAreaInsets();
+  const router = useRouter();
 
   const [isPublic, setIsPublic] = useState(false);
   const [content, setContent] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
 
   const [isVideo, setIsVideo] = useState(false);
-  const video = useRef(null);
+  const video = useRef<Video | null>(null);
   const [status, setStatus] = useState({} as AVPlaybackStatusSuccess);
 
   async function openImagePicker() {
@@ -42,7 +45,53 @@ export default function NewMemory() {
     }
   }
 
-  function handleCreateMemory() {}
+  async function handleCreateMemory() {
+    const token = await SecureStore.getItemAsync('token');
+
+    let coverUrl = '';
+
+    if (preview) {
+      const uploadFormData = new FormData();
+
+      if (isVideo) {
+        uploadFormData.append('file', {
+          uri: preview,
+          name: 'video.mp4',
+          type: 'video/mp4',
+        } as any);
+      } else {
+        uploadFormData.append('file', {
+          uri: preview,
+          name: 'image.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
+
+      const uploadResponse = await api.post('/upload', uploadFormData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      coverUrl = uploadResponse.data.fileUrl;
+
+      await api.post(
+        '/memories',
+        {
+          content,
+          isPublic,
+          coverUrl,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      router.push('/memories');
+    }
+  }
 
   return (
     <ScrollView
@@ -156,6 +205,7 @@ export default function NewMemory() {
           multiline
           value={content}
           onChangeText={setContent}
+          textAlignVertical="top"
           className="p-0 font-body text-lg text-gray-50"
           placeholderTextColor={'#56565a'}
           placeholder="Fique livre para adicionar fotos, vídeos e relatos sobre essa experiência que você quer lembrar para sempre"
