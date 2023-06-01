@@ -1,9 +1,14 @@
 import { Link, useRouter } from 'expo-router';
-import { Switch } from 'react-native';
 import { useRef, useState } from 'react';
-import { TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  Switch,
+  TouchableOpacity,
+} from 'react-native';
 import { Video, ResizeMode, AVPlaybackStatusSuccess } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import Icon from '@expo/vector-icons/Feather';
