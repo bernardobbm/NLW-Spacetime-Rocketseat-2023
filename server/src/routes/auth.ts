@@ -1,5 +1,5 @@
-import { FastifyInstance } from 'fastify';
 import axios from 'axios';
+import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 
@@ -10,6 +10,8 @@ export async function authRoutes(app: FastifyInstance) {
     });
 
     const { code } = bodySchema.parse(request.body);
+
+    console.log(code);
 
     const accessTokenResponse = await axios.post(
       'https://github.com/login/oauth/access_token',
@@ -26,7 +28,11 @@ export async function authRoutes(app: FastifyInstance) {
       },
     );
 
+    console.log(accessTokenResponse);
+
     const { access_token } = accessTokenResponse.data;
+
+    console.log(access_token);
 
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
